@@ -1,0 +1,148 @@
+/* Fallback fontsource imports — must come first */
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/jetbrains-mono/400.css';
+
+/* OctaiPipe brand fonts — self-hosted */
+@font-face {
+  font-family: "Neue Haas Grotesk Display";
+  src: url("/fonts/NHaasGroteskDSPro-55Rg.otf") format("opentype");
+  font-weight: 400 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ABC Favorit Mono";
+  src: url("/fonts/ABCFavoritMono-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: #F3F1F1;
+    color: #000000;
+    font-family: "Neue Haas Grotesk Display", "Helvetica Neue", Inter, -apple-system, sans-serif;
+    font-weight: 400;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* ── A4 page card ──────────────────────────────────────────────── */
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 24px auto;
+  background: #FFFFFF;
+  padding: 12mm 14mm;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04), 0 24px 60px -20px rgba(20,20,20,0.18);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Editable affordance ───────────────────────────────────────── */
+[contenteditable="true"] {
+  outline: none;
+  transition: background 100ms ease, box-shadow 100ms ease;
+}
+[contenteditable="true"]:hover {
+  background: rgba(255,112,50,0.06);
+}
+[contenteditable="true"]:focus {
+  background: rgba(255,112,50,0.10);
+  box-shadow: inset 0 0 0 1px #FF7032;
+}
+[contenteditable="true"]:empty::before {
+  content: attr(data-placeholder);
+  color: #CCCBCA;
+  pointer-events: none;
+}
+
+/* ── Date chip (DateInput primitive) ───────────────────────────── */
+.date-chip {
+  border-radius: 2px;
+  transition: background 100ms ease, box-shadow 100ms ease;
+}
+.date-chip:hover {
+  background: rgba(255,112,50,0.06);
+}
+.date-chip:focus {
+  outline: none;
+  background: rgba(255,112,50,0.10);
+  box-shadow: inset 0 0 0 1px #FF7032;
+}
+
+/* ── Print ─────────────────────────────────────────────────────── */
+@media print {
+  @page { size: A4; margin: 0; }
+
+  /* Preserve ALL background colors, borders, and fills */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  body { background: white !important; }
+  main { padding: 0 !important; margin: 0 !important; }
+
+  .no-print { display: none !important; }
+
+  .page {
+    box-shadow: none !important;
+    margin: 0 !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    padding: 12mm 14mm 28mm !important;
+    page-break-after: always;
+    break-after: page;
+    display: block !important;
+    position: relative !important;
+    overflow: hidden !important;
+  }
+  .page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  /* Pin footer to bottom of each page */
+  .page-footer {
+    position: absolute !important;
+    bottom: 10mm !important;
+    left: 14mm !important;
+    right: 14mm !important;
+    margin-top: 0 !important;
+    padding-top: 10px !important;
+    display: flex !important;
+    background: #FFFFFF !important;
+  }
+
+  /* Prevent awkward mid-element page breaks */
+  header, footer, section, h1, h2, h3 {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Remove edit affordances */
+  [contenteditable="true"]:hover,
+  [contenteditable="true"]:focus,
+  .date-chip:hover,
+  .date-chip:focus {
+    background: transparent !important;
+    box-shadow: none !important;
+    cursor: default !important;
+  }
+
+  /* Hide the hidden native input inside DateInput */
+  .date-chip input { display: none !important; }
+}

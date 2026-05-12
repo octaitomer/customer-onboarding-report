@@ -156,16 +156,35 @@ export default function ReportSlider({ customer, onSelect, onAdd, onDelete }: Pr
                   Week Report {idx + 1}
                 </div>
                 <div style={{
-                  fontFamily: 'Inter, sans-serif',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  color: isActive ? '#111' : 'rgba(255,255,255,0.7)',
-                  lineHeight: 1.2,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  gap: '6px',
                 }}>
-                  {report.meta.date || report.createdAt}
+                  <span style={{
+                    fontFamily: 'Inter, sans-serif',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    color: isActive ? '#111' : 'rgba(255,255,255,0.7)',
+                    lineHeight: 1.2,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}>
+                    {report.meta.date || report.createdAt}
+                  </span>
+                  {report.hero.onboardingPercent !== '' && (
+                    <span style={{
+                      fontFamily: '"JetBrains Mono", monospace',
+                      fontSize: '10px',
+                      fontWeight: 600,
+                      color: isActive ? ACCENT : 'rgba(255,165,100,0.75)',
+                      lineHeight: 1,
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                    }}>
+                      {report.hero.onboardingPercent}%
+                    </span>
+                  )}
                 </div>
               </button>
 

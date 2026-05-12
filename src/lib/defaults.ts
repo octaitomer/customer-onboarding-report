@@ -1,6 +1,8 @@
 import { v4 as uuidv4 } from 'uuid'
 import type { Customer, Report } from './types'
 
+export const TEMPLATE_CUSTOMER_ID = '__template__'
+
 function today(): string {
   const d = new Date()
   return [
@@ -108,6 +110,16 @@ export function cloneReport(src: Report): Report {
       milestones: ws.milestones.map((m) => ({ ...m, id: uuidv4() })),
     })),
     blockers: src.blockers.map((b) => ({ ...b, id: uuidv4() })),
+  }
+}
+
+export function createTemplateCustomer(): Customer {
+  const report = createDefaultReport('New Customer')
+  return {
+    id: TEMPLATE_CUSTOMER_ID,
+    name: 'Default Template',
+    reports: [report],
+    activeReportId: report.id,
   }
 }
 

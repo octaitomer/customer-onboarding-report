@@ -5,7 +5,10 @@ import type {
   Customer, Report, PhaseStatus,
   StreamStatus, MilestoneState, RiskLevel,
 } from '../lib/types'
-import { createDefaultCustomer, cloneReport, SAMPLE_CUSTOMER } from '../lib/defaults'
+import {
+  createDefaultCustomer, createTemplateCustomer,
+  cloneReport, SAMPLE_CUSTOMER, TEMPLATE_CUSTOMER_ID,
+} from '../lib/defaults'
 
 type Store = {
   customers: Record<string, Customer>
@@ -95,12 +98,25 @@ function updateReport(
 export const useTrackerStore = create<Store>()(
   persist(
     (set, get) => ({
-      customers: { [SAMPLE_CUSTOMER.id]: SAMPLE_CUSTOMER },
+      customers: {
+        [SAMPLE_CUSTOMER.id]: SAMPLE_CUSTOMER,
+        [TEMPLATE_CUSTOMER_ID]: createTemplateCustomer(),
+      },
       customerOrder: [SAMPLE_CUSTOMER.id],
       activeCustomerId: SAMPLE_CUSTOMER.id,
 
       addCustomer: (name = 'New Customer', site = 'ACX01') => {
-        const c = createDefaultCustomer(name, site)
+        const tmpl = get().customers[TEMPLATE_CUSTOMER_ID]
+        const baseReport = tmpl?.reports[tmpl.reports.length - 1]
+        let report
+        if (baseReport) {
+          report = cloneReport(baseReport)
+          report.title = { ...report.title, main: name }
+          report.meta = { ...report.meta, site }
+        } else {
+          report = createDefaultCustomer(name, site).reports[0]
+        }
+        const c = { id: uuidv4(), name, reports: [report], activeReportId: report.id }
         set((s) => ({
           customers: { ...s.customers, [c.id]: c },
           customerOrder: [...s.customerOrder, c.id],
@@ -395,6 +411,11 @@ export const useTrackerStore = create<Store>()(
         customerOrder: s.customerOrder,
         activeCustomerId: s.activeCustomerId,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state && !state.customers[TEMPLATE_CUSTOMER_ID]) {
+          state.customers[TEMPLATE_CUSTOMER_ID] = createTemplateCustomer()
+        }
+      },
     },
   ),
 )

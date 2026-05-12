@@ -3,6 +3,7 @@ import { useTrackerStore } from '../store/useTrackerStore'
 
 interface Props {
   onOpen: (id: string) => void
+  onOpenTemplate: () => void
 }
 
 interface ModalState {
@@ -237,7 +238,38 @@ function CustomerModal({
   )
 }
 
-export default function Dashboard({ onOpen }: Props) {
+function TemplateButton({ onClick }: { onClick: () => void }) {
+  const [hov, setHov] = useState(false)
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        background: hov ? 'rgba(255,255,255,0.1)' : 'transparent',
+        border: '1px solid rgba(255,255,255,0.2)',
+        color: hov ? '#fff' : 'rgba(255,255,255,0.55)',
+        padding: '7px 14px',
+        fontFamily: '"JetBrains Mono", monospace',
+        fontSize: '10px',
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '7px',
+        transition: 'background 0.12s, color 0.12s',
+        flexShrink: 0,
+      }}
+    >
+      <span style={{ fontSize: '13px', lineHeight: 1 }}>⬡</span>
+      Default Template
+    </button>
+  )
+}
+
+export default function Dashboard({ onOpen, onOpenTemplate }: Props) {
   const store = useTrackerStore()
   const { customers, customerOrder } = store
   const [hovered, setHovered] = useState<string | null>(null)
@@ -302,6 +334,12 @@ export default function Dashboard({ onOpen }: Props) {
         >
           Customer Onboarding Reports
         </span>
+
+        {/* Spacer */}
+        <div style={{ flex: 1 }} />
+
+        {/* Default template button */}
+        <TemplateButton onClick={onOpenTemplate} />
       </div>
 
       {/* Body */}

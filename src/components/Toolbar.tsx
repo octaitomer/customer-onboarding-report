@@ -1,11 +1,12 @@
 interface Props {
   customerName: string
+  site?: string
   onBack: () => void
 }
 
 const ACCENT = '#FF5C39'
 
-export default function Toolbar({ customerName, onBack }: Props) {
+export default function Toolbar({ customerName, site, onBack }: Props) {
   return (
     <div
       className="no-print"
@@ -64,22 +65,42 @@ export default function Toolbar({ customerName, onBack }: Props) {
         </button>
       </div>
 
-      {/* Centre — customer name */}
+      {/* Centre — customer name · site */}
       <span
         style={{
-          fontFamily: 'Inter, sans-serif',
-          fontSize: '13px',
-          fontWeight: 500,
-          color: 'rgba(255,255,255,0.7)',
-          letterSpacing: '0.01em',
           position: 'absolute',
           left: '50%',
           transform: 'translateX(-50%)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
           whiteSpace: 'nowrap',
           pointerEvents: 'none',
         }}
       >
-        {customerName}
+        <span style={{
+          fontFamily: 'Inter, sans-serif',
+          fontSize: '13px',
+          fontWeight: 500,
+          color: 'rgba(255,255,255,0.8)',
+          letterSpacing: '0.01em',
+        }}>
+          {customerName}
+        </span>
+        {site && (
+          <>
+            <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '12px' }}>·</span>
+            <span style={{
+              fontFamily: '"JetBrains Mono", monospace',
+              fontSize: '10px',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'rgba(255,255,255,0.4)',
+            }}>
+              {site}
+            </span>
+          </>
+        )}
       </span>
 
       {/* Right — save as PDF */}
