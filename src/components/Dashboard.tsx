@@ -447,7 +447,7 @@ export default function Dashboard({ onOpen, onOpenTemplate }: Props) {
                             letterSpacing: '0.08em',
                           }}
                         >
-                          Onboarding Complete
+                          Overall Progress
                         </span>
                         <span
                           style={{

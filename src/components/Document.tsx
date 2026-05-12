@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Report } from '../lib/types'
 import Header from './Header'
 import TitleBlock from './TitleBlock'
@@ -22,6 +23,18 @@ export default function Document({ customerId, customerName, report }: Props) {
   const store = useTrackerStore()
   const cid = customerId
   const rid = report.id
+  const phase2Id = report.phases[1]?.id
+  const [showFinish, setShowFinish] = useState(true)
+
+  function setStart(v: string) {
+    store.patchHero(cid, rid, { pilotStart: v })
+    if (phase2Id) store.patchPhase(cid, rid, phase2Id, { startDate: v })
+  }
+
+  function setFinish(v: string) {
+    store.patchHero(cid, rid, { pilotFinish: v })
+    if (phase2Id) store.patchPhase(cid, rid, phase2Id, { endDate: v })
+  }
 
   return (
     <div>
@@ -54,8 +67,10 @@ export default function Document({ customerId, customerName, report }: Props) {
           pilotStart={report.hero.pilotStart}
           pilotFinish={report.hero.pilotFinish}
           onPct={(v) => store.patchHero(cid, rid, { onboardingPercent: v })}
-          onStart={(v) => store.patchHero(cid, rid, { pilotStart: v })}
-          onFinish={(v) => store.patchHero(cid, rid, { pilotFinish: v })}
+          onStart={setStart}
+          onFinish={setFinish}
+          showFinish={showFinish}
+          onToggleFinish={() => setShowFinish((v) => !v)}
         />
 
         <PhaseGrid
@@ -65,6 +80,15 @@ export default function Document({ customerId, customerName, report }: Props) {
           onCycleStatus={(phaseId) => store.cyclePhaseStatus(cid, rid, phaseId)}
           onTitle={(phaseId, v) => store.patchPhase(cid, rid, phaseId, { title: v })}
           onPercent={(phaseId, v) => store.patchPhase(cid, rid, phaseId, { percent: v })}
+          onStartDate={(phaseId, v) => {
+            store.patchPhase(cid, rid, phaseId, { startDate: v })
+            if (phaseId === phase2Id) store.patchHero(cid, rid, { pilotStart: v })
+          }}
+          onEndDate={(phaseId, v) => {
+            store.patchPhase(cid, rid, phaseId, { endDate: v })
+            if (phaseId === phase2Id) store.patchHero(cid, rid, { pilotFinish: v })
+          }}
+          hideEndDate={(phaseId) => !showFinish && phaseId === phase2Id}
         />
 
         <TasksTable

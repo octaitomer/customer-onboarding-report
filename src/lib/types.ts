@@ -5,6 +5,8 @@ export type Phase = {
   title: string
   percent: number
   status: PhaseStatus
+  startDate?: string   // ISO "YYYY-MM-DD"
+  endDate?: string     // ISO "YYYY-MM-DD"
 }
 
 export type Task = {

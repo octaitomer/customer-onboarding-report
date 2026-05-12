@@ -1,6 +1,7 @@
 import type { Phase } from '../lib/types'
 import EditableText from './primitives/EditableText'
 import ProgressBar from './primitives/ProgressBar'
+import DateInput from './primitives/DateInput'
 
 const PHASE_STATES = {
   pending:   { dot: '○', label: '○ Pending',   bgClass: '' },
@@ -15,11 +16,14 @@ type Props = {
   onCycleStatus: (id: string) => void
   onTitle: (id: string, v: string) => void
   onPercent: (id: string, v: number) => void
+  onStartDate: (id: string, v: string) => void
+  onEndDate: (id: string, v: string) => void
+  hideEndDate: (id: string) => boolean
 }
 
 export default function PhaseGrid({
   phases, sectionIndex, sectionTotal,
-  onCycleStatus, onTitle, onPercent,
+  onCycleStatus, onTitle, onPercent, onStartDate, onEndDate, hideEndDate,
 }: Props) {
   return (
     <section style={{ marginBottom: '8px' }}>
@@ -125,6 +129,69 @@ export default function PhaseGrid({
                   completed={isCompleted}
                   height={4}
                 />
+              </div>
+              <div style={{
+                marginTop: '10px',
+                display: 'flex',
+                gap: '8px',
+                alignItems: 'center',
+              }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{
+                    fontFamily: '"ABC Favorit Mono", "JetBrains Mono", monospace',
+                    fontSize: '8px',
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    color: '#9CA3AF',
+                    marginBottom: '3px',
+                  }}>
+                    Start
+                  </div>
+                  <DateInput
+                    value={phase.startDate ?? ''}
+                    onChange={(v) => onStartDate(phase.id, v)}
+                    format="DD MM YYYY"
+                    style={{
+                      fontFamily: '"ABC Favorit Mono", "JetBrains Mono", monospace',
+                      fontSize: '10px',
+                      letterSpacing: '0.06em',
+                      color: isActive ? '#FF7032' : '#6D6C6C',
+                    }}
+                  />
+                </div>
+                {!hideEndDate(phase.id) && (
+                  <>
+                    <div style={{
+                      width: '1px',
+                      height: '24px',
+                      background: '#CCCBCA',
+                      flexShrink: 0,
+                    }} />
+                    <div style={{ flex: 1, marginLeft: '12px' }}>
+                      <div style={{
+                        fontFamily: '"ABC Favorit Mono", "JetBrains Mono", monospace',
+                        fontSize: '8px',
+                        letterSpacing: '0.12em',
+                        textTransform: 'uppercase',
+                        color: '#9CA3AF',
+                        marginBottom: '3px',
+                      }}>
+                        End
+                      </div>
+                      <DateInput
+                        value={phase.endDate ?? ''}
+                        onChange={(v) => onEndDate(phase.id, v)}
+                        format="DD MM YYYY"
+                        style={{
+                          fontFamily: '"ABC Favorit Mono", "JetBrains Mono", monospace',
+                          fontSize: '10px',
+                          letterSpacing: '0.06em',
+                          color: isCompleted ? '#2ea063' : '#6D6C6C',
+                        }}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )

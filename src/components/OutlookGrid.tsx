@@ -187,7 +187,7 @@ export default function OutlookGrid({
         }}
       >
         <h2 style={{ fontFamily: 'inherit', fontWeight: 500, fontSize: '19px', letterSpacing: '-0.01em' }}>
-          Four-week outlook
+          Two-week outlook
         </h2>
         <span
           style={{

@@ -34,7 +34,7 @@ type Store = {
   patchHero: (customerId: string, reportId: string, patch: Partial<Report['hero']>) => void
 
   // Phases
-  patchPhase: (customerId: string, reportId: string, phaseId: string, patch: { title?: string; percent?: number }) => void
+  patchPhase: (customerId: string, reportId: string, phaseId: string, patch: { title?: string; percent?: number; startDate?: string; endDate?: string }) => void
   cyclePhaseStatus: (customerId: string, reportId: string, phaseId: string) => void
 
   // Tasks

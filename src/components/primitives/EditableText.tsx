@@ -24,10 +24,13 @@ export default function EditableText({
   const ref = useRef<HTMLElement>(null)
 
   useEffect(() => {
-    if (ref.current && ref.current.textContent !== value) {
-      ref.current.textContent = value
+    if (!ref.current) return
+    const current = multiline ? ref.current.innerText : ref.current.textContent
+    if (current !== value) {
+      if (multiline) ref.current.innerText = value
+      else ref.current.textContent = value
     }
-  }, [value])
+  }, [value, multiline])
 
   return (
     <Tag
@@ -36,15 +39,23 @@ export default function EditableText({
       suppressContentEditableWarning
       data-placeholder={placeholder}
       className={className}
-      style={style}
-      onBlur={(e) => onChange(e.currentTarget.textContent ?? '')}
+      style={multiline ? { whiteSpace: 'pre-wrap', ...style } : style}
+      onBlur={(e) => {
+        const v = multiline
+          ? (e.currentTarget.innerText ?? '').replace(/\n$/, '')
+          : (e.currentTarget.textContent ?? '')
+        onChange(v)
+      }}
       onKeyDown={(e) => {
         if (e.key === 'Enter' && !multiline) {
           e.preventDefault()
           ;(e.currentTarget as HTMLElement).blur()
         }
         if (e.key === 'Escape') {
-          if (ref.current) ref.current.textContent = value
+          if (ref.current) {
+            if (multiline) ref.current.innerText = value
+            else ref.current.textContent = value
+          }
           ;(e.currentTarget as HTMLElement).blur()
         }
       }}
