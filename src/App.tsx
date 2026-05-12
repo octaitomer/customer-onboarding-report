@@ -1,29 +1,32 @@
+import { useState } from 'react'
 import Toolbar from './components/Toolbar'
-import TabStrip from './components/TabStrip'
 import Document from './components/Document'
+import Dashboard from './components/Dashboard'
 import { useTrackerStore } from './store/useTrackerStore'
 
 export default function App() {
+  const [view, setView] = useState<'dashboard' | 'editor'>('dashboard')
   const store = useTrackerStore()
-  const customers = Object.values(store.customers)
   const active = store.customers[store.activeCustomerId]
 
-  if (!active) return null
+  function openCustomer(id: string) {
+    store.setActive(id)
+    setView('editor')
+  }
+
+  if (view === 'dashboard') {
+    return <Dashboard onOpen={openCustomer} />
+  }
+
+  if (!active) {
+    setView('dashboard')
+    return null
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#F3F1F1' }}>
-      <Toolbar />
-      <TabStrip
-        customers={customers}
-        customerOrder={store.customerOrder}
-        activeId={store.activeCustomerId}
-        onSelect={store.setActive}
-        onAdd={() => store.addCustomer()}
-        onRemove={store.removeCustomer}
-        onDuplicate={store.duplicateCustomer}
-        onRename={store.renameCustomer}
-      />
-      <main style={{ paddingTop: '8px', paddingBottom: '40px' }}>
+      <Toolbar customerName={active.name} onBack={() => setView('dashboard')} />
+      <main style={{ paddingTop: '68px', paddingBottom: '40px' }}>
         <Document customer={active} />
       </main>
     </div>

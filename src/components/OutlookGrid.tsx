@@ -213,7 +213,7 @@ export default function OutlookGrid({
       >
         <WeekCol
           week={previous}
-          label="PREVIOUS TWO WEEKS"
+          label="PREVIOUS WEEK"
           isThis
           onDates={(p) => onDates('previous', p)}
           onAddItem={() => onAddItem('previous')}
@@ -222,7 +222,7 @@ export default function OutlookGrid({
         />
         <WeekCol
           week={next}
-          label="NEXT TWO WEEKS"
+          label="NEXT WEEK"
           isThis={false}
           onDates={(p) => onDates('next', p)}
           onAddItem={() => onAddItem('next')}
