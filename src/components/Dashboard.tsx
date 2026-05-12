@@ -250,20 +250,22 @@ export default function Dashboard({ onOpen }: Props) {
   function openEdit(e: React.MouseEvent, id: string) {
     e.stopPropagation()
     const c = customers[id]
-    setModal({ mode: 'edit', id, name: c.name, site: c.meta.site })
+    const latestReport = c.reports[c.reports.length - 1]
+    setModal({ mode: 'edit', id, name: c.name, site: latestReport?.meta.site ?? '' })
   }
 
   function handleConfirm(name: string, site: string) {
     if (!modal) return
     if (modal.mode === 'create') {
-      store.addCustomer(name)
-      const newId = useTrackerStore.getState().activeCustomerId
-      store.patchMeta(newId, { site })
+      store.addCustomer(name, site)
       setModal(null)
+      const newId = useTrackerStore.getState().activeCustomerId
       onOpen(newId)
     } else if (modal.mode === 'edit' && modal.id) {
       store.renameCustomer(modal.id, name)
-      store.patchMeta(modal.id, { site })
+      // Update site on all reports for this customer
+      const c = useTrackerStore.getState().customers[modal.id]
+      c?.reports.forEach((r) => store.patchMeta(modal.id!, r.id, { site }))
       setModal(null)
     }
   }
@@ -326,8 +328,10 @@ export default function Dashboard({ onOpen }: Props) {
         >
           {ordered.map((c) => {
             const isHov = hovered === c.id
-            const pct = c.hero.onboardingPercent !== ''
-              ? Math.min(100, Math.max(0, parseInt(c.hero.onboardingPercent) || 0))
+            const latestReport = c.reports[c.reports.length - 1]
+            const rawPct = latestReport?.hero.onboardingPercent ?? ''
+            const pct = rawPct !== ''
+              ? Math.min(100, Math.max(0, parseInt(rawPct) || 0))
               : null
 
             return (
@@ -381,8 +385,8 @@ export default function Dashboard({ onOpen }: Props) {
                         color: MUTED,
                       }}
                     >
-                      {c.meta.site}
-                      {c.meta.date ? ` · ${c.meta.date}` : ''}
+                      {latestReport?.meta.site}
+                      {latestReport?.meta.date ? ` · ${latestReport.meta.date}` : ''}
                     </div>
                   </div>
 

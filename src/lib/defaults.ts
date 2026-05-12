@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
-import type { Customer } from './types'
+import type { Customer, Report } from './types'
 
 function today(): string {
   const d = new Date()
@@ -10,17 +10,24 @@ function today(): string {
   ].join(' ')
 }
 
-export function createDefaultCustomer(name = 'New Customer'): Customer {
+function isoToday(): string {
+  return new Date().toISOString().split('T')[0]
+}
+
+export function createDefaultReport(name: string, site = 'ACX01'): Report {
   return {
     id: uuidv4(),
-    name,
-    meta: { site: 'ACX01', date: today() },
+    createdAt: isoToday(),
+    meta: { site, date: today() },
     title: {
       eyebrow: 'Pilot Progress Report',
       main: name,
       accent: 'Pilot',
       sub: 'Onboarding Tracker',
-      deck: 'Our shared mission to make the data center smarter and cheaper to run. This status report tracks where we are, what\'s next, and where we\'re counting on ' + name + '.',
+      deck:
+        "Our shared mission to make the data center smarter and cheaper to run. This status report tracks where we are, what's next, and where we're counting on " +
+        name +
+        '.',
     },
     hero: {
       onboardingPercent: '',
@@ -37,16 +44,8 @@ export function createDefaultCustomer(name = 'New Customer'): Customer {
       { id: uuidv4(), task: '', owner: '', due: '' },
     ],
     outlook: {
-      previous: {
-        startDate: 'DD MM',
-        endDate: 'DD MM',
-        items: ['', ''],
-      },
-      next: {
-        startDate: 'DD MM',
-        endDate: 'DD MM',
-        items: ['', ''],
-      },
+      previous: { startDate: 'DD MM', endDate: 'DD MM', items: ['', ''] },
+      next: { startDate: 'DD MM', endDate: 'DD MM', items: ['', ''] },
     },
     workStreams: [
       {
@@ -86,28 +85,49 @@ export function createDefaultCustomer(name = 'New Customer'): Customer {
         ],
       },
     ],
-    blockers: [
-      { id: uuidv4(), level: 'high', text: '' },
-    ],
+    blockers: [{ id: uuidv4(), level: 'high', text: '' }],
   }
 }
 
-export const SAMPLE_CUSTOMER: Customer = {
-  id: 'converge-01',
-  name: 'Converge',
+export function cloneReport(src: Report): Report {
+  return {
+    id: uuidv4(),
+    createdAt: isoToday(),
+    meta: { ...src.meta, date: today() },
+    title: { ...src.title },
+    hero: { ...src.hero },
+    phases: src.phases.map((p) => ({ ...p, id: uuidv4() })),
+    tasks: src.tasks.map((t) => ({ ...t, id: uuidv4() })),
+    outlook: {
+      previous: { ...src.outlook.previous, items: [...src.outlook.previous.items] },
+      next: { ...src.outlook.next, items: [...src.outlook.next.items] },
+    },
+    workStreams: src.workStreams.map((ws) => ({
+      ...ws,
+      id: uuidv4(),
+      milestones: ws.milestones.map((m) => ({ ...m, id: uuidv4() })),
+    })),
+    blockers: src.blockers.map((b) => ({ ...b, id: uuidv4() })),
+  }
+}
+
+export function createDefaultCustomer(name = 'New Customer', site = 'ACX01'): Customer {
+  const report = createDefaultReport(name, site)
+  return { id: uuidv4(), name, reports: [report], activeReportId: report.id }
+}
+
+const sampleReport: Report = {
+  id: 'report-converge-01',
+  createdAt: '2026-05-12',
   meta: { site: 'ACX01', date: today() },
   title: {
     eyebrow: 'Pilot Progress Report',
     main: 'Converge',
     accent: 'Pilot',
     sub: 'Onboarding Tracker',
-    deck: 'Our shared mission to make the data center smarter and cheaper to run. This status report tracks where we are, what\'s next, and where we\'re counting on Converge.',
+    deck: "Our shared mission to make the data center smarter and cheaper to run. This status report tracks where we are, what's next, and where we're counting on Converge.",
   },
-  hero: {
-    onboardingPercent: '',
-    pilotStart: 'DD MM YYYY',
-    pilotFinish: 'DD MM YYYY',
-  },
+  hero: { onboardingPercent: '', pilotStart: 'DD MM YYYY', pilotFinish: 'DD MM YYYY' },
   phases: [
     { id: 'p1', title: 'Phase 01 — Onboarding', percent: 70, status: 'active' },
     { id: 'p2', title: 'Phase 02 — Pilot Run', percent: 0, status: 'pending' },
@@ -121,11 +141,7 @@ export const SAMPLE_CUSTOMER: Customer = {
     previous: {
       startDate: 'DD MM',
       endDate: 'DD MM',
-      items: [
-        'Mon — Building & Ops workshop',
-        'Wed — IT workshop',
-        'Fri — Internal sync',
-      ],
+      items: ['Mon — Building & Ops workshop', 'Wed — IT workshop', 'Fri — Internal sync'],
     },
     next: {
       startDate: 'DD MM',
@@ -188,4 +204,11 @@ export const SAMPLE_CUSTOMER: Customer = {
     { id: 'b2', level: 'med', text: 'Network team only just engaged — VPN setup at risk' },
     { id: 'b3', level: 'low', text: 'Low-impact item' },
   ],
+}
+
+export const SAMPLE_CUSTOMER: Customer = {
+  id: 'converge-01',
+  name: 'Converge',
+  reports: [sampleReport],
+  activeReportId: sampleReport.id,
 }

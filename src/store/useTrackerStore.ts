@@ -2,64 +2,73 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { v4 as uuidv4 } from 'uuid'
 import type {
-  Customer, Phase, PhaseStatus, Task,
-  WorkStream, StreamStatus, Milestone, MilestoneState,
-  Blocker, RiskLevel,
+  Customer, Report, PhaseStatus,
+  StreamStatus, MilestoneState, RiskLevel,
 } from '../lib/types'
-import { createDefaultCustomer, SAMPLE_CUSTOMER } from '../lib/defaults'
+import { createDefaultCustomer, cloneReport, SAMPLE_CUSTOMER } from '../lib/defaults'
 
 type Store = {
   customers: Record<string, Customer>
   customerOrder: string[]
   activeCustomerId: string
 
-  // Tab management
-  addCustomer: (name?: string) => void
+  // Customer management
+  addCustomer: (name?: string, site?: string) => void
   removeCustomer: (id: string) => void
-  duplicateCustomer: (id: string) => void
   setActive: (id: string) => void
   renameCustomer: (id: string, name: string) => void
   reorderCustomers: (ids: string[]) => void
 
-  // Meta
-  patchMeta: (id: string, patch: Partial<Customer['meta']>) => void
-  patchTitle: (id: string, patch: Partial<Customer['title']>) => void
-  patchHero: (id: string, patch: Partial<Customer['hero']>) => void
+  // Report management
+  addReport: (customerId: string) => void
+  removeReport: (customerId: string, reportId: string) => void
+  setActiveReport: (customerId: string, reportId: string) => void
+  patchReportDate: (customerId: string, reportId: string, date: string) => void
+
+  // Report content
+  patchMeta: (customerId: string, reportId: string, patch: Partial<Report['meta']>) => void
+  patchTitle: (customerId: string, reportId: string, patch: Partial<Report['title']>) => void
+  patchHero: (customerId: string, reportId: string, patch: Partial<Report['hero']>) => void
 
   // Phases
-  patchPhase: (id: string, phaseId: string, patch: { title?: string; percent?: number }) => void
-  cyclePhaseStatus: (id: string, phaseId: string) => void
+  patchPhase: (customerId: string, reportId: string, phaseId: string, patch: { title?: string; percent?: number }) => void
+  cyclePhaseStatus: (customerId: string, reportId: string, phaseId: string) => void
 
   // Tasks
-  addTask: (id: string) => void
-  removeTask: (id: string, taskId: string) => void
-  patchTask: (id: string, taskId: string, patch: Partial<Omit<Task, 'id'>>) => void
+  addTask: (customerId: string, reportId: string) => void
+  removeTask: (customerId: string, reportId: string, taskId: string) => void
+  patchTask: (customerId: string, reportId: string, taskId: string, patch: Partial<Omit<Report['tasks'][0], 'id'>>) => void
 
   // Outlook
-  patchOutlookDates: (id: string, week: 'previous' | 'next', patch: { startDate?: string; endDate?: string }) => void
-  addOutlookItem: (id: string, week: 'previous' | 'next') => void
-  removeOutlookItem: (id: string, week: 'previous' | 'next', idx: number) => void
-  patchOutlookItem: (id: string, week: 'previous' | 'next', idx: number, text: string) => void
+  patchOutlookDates: (customerId: string, reportId: string, week: 'previous' | 'next', patch: { startDate?: string; endDate?: string }) => void
+  addOutlookItem: (customerId: string, reportId: string, week: 'previous' | 'next') => void
+  removeOutlookItem: (customerId: string, reportId: string, week: 'previous' | 'next', idx: number) => void
+  patchOutlookItem: (customerId: string, reportId: string, week: 'previous' | 'next', idx: number, text: string) => void
 
   // Work streams
-  patchStream: (id: string, streamId: string, patch: { name?: string; percent?: number }) => void
-  cycleStreamStatus: (id: string, streamId: string) => void
-  addMilestone: (id: string, streamId: string) => void
-  removeMilestone: (id: string, streamId: string, msId: string) => void
-  patchMilestone: (id: string, streamId: string, msId: string, text: string) => void
-  cycleMilestoneState: (id: string, streamId: string, msId: string) => void
+  patchStream: (customerId: string, reportId: string, streamId: string, patch: { name?: string; percent?: number }) => void
+  cycleStreamStatus: (customerId: string, reportId: string, streamId: string) => void
+  addMilestone: (customerId: string, reportId: string, streamId: string) => void
+  removeMilestone: (customerId: string, reportId: string, streamId: string, msId: string) => void
+  patchMilestone: (customerId: string, reportId: string, streamId: string, msId: string, text: string) => void
+  cycleMilestoneState: (customerId: string, reportId: string, streamId: string, msId: string) => void
 
   // Blockers
-  addBlocker: (id: string) => void
-  removeBlocker: (id: string, blockerId: string) => void
-  patchBlocker: (id: string, blockerId: string, text: string) => void
-  cycleBlockerLevel: (id: string, blockerId: string) => void
+  addBlocker: (customerId: string, reportId: string) => void
+  removeBlocker: (customerId: string, reportId: string, blockerId: string) => void
+  patchBlocker: (customerId: string, reportId: string, blockerId: string, text: string) => void
+  cycleBlockerLevel: (customerId: string, reportId: string, blockerId: string) => void
 }
 
 const PHASE_CYCLE: PhaseStatus[] = ['pending', 'active', 'completed']
 const STREAM_CYCLE: StreamStatus[] = ['ahead', 'on-track', 'behind', 'pending']
 const MS_CYCLE: MilestoneState[] = ['', 'done', 'in-progress']
 const RISK_CYCLE: RiskLevel[] = ['high', 'med', 'low']
+
+function nextIn<T>(cycle: T[], val: T): T {
+  const idx = cycle.indexOf(val)
+  return cycle[(idx + 1) % cycle.length]
+}
 
 function updateCustomer(
   state: Pick<Store, 'customers'>,
@@ -71,21 +80,16 @@ function updateCustomer(
   return { customers: { ...state.customers, [id]: updater(c) } }
 }
 
-function phaseCycle(status: PhaseStatus): PhaseStatus {
-  const idx = PHASE_CYCLE.indexOf(status)
-  return PHASE_CYCLE[(idx + 1) % PHASE_CYCLE.length]
-}
-function streamCycle(status: StreamStatus): StreamStatus {
-  const idx = STREAM_CYCLE.indexOf(status)
-  return STREAM_CYCLE[(idx + 1) % STREAM_CYCLE.length]
-}
-function msCycle(state: MilestoneState): MilestoneState {
-  const idx = MS_CYCLE.indexOf(state)
-  return MS_CYCLE[(idx + 1) % MS_CYCLE.length]
-}
-function riskCycle(level: RiskLevel): RiskLevel {
-  const idx = RISK_CYCLE.indexOf(level)
-  return RISK_CYCLE[(idx + 1) % RISK_CYCLE.length]
+function updateReport(
+  state: Pick<Store, 'customers'>,
+  customerId: string,
+  reportId: string,
+  updater: (r: Report) => Report,
+): Partial<Store> {
+  return updateCustomer(state, customerId, (c) => ({
+    ...c,
+    reports: c.reports.map((r) => (r.id === reportId ? updater(r) : r)),
+  }))
 }
 
 export const useTrackerStore = create<Store>()(
@@ -95,8 +99,8 @@ export const useTrackerStore = create<Store>()(
       customerOrder: [SAMPLE_CUSTOMER.id],
       activeCustomerId: SAMPLE_CUSTOMER.id,
 
-      addCustomer: (name = 'New Customer') => {
-        const c = createDefaultCustomer(name)
+      addCustomer: (name = 'New Customer', site = 'ACX01') => {
+        const c = createDefaultCustomer(name, site)
         set((s) => ({
           customers: { ...s.customers, [c.id]: c },
           customerOrder: [...s.customerOrder, c.id],
@@ -115,19 +119,6 @@ export const useTrackerStore = create<Store>()(
         })
       },
 
-      duplicateCustomer: (id) => {
-        const src = get().customers[id]
-        if (!src) return
-        const c: Customer = JSON.parse(JSON.stringify(src))
-        c.id = uuidv4()
-        c.name = src.name + ' (copy)'
-        set((s) => ({
-          customers: { ...s.customers, [c.id]: c },
-          customerOrder: [...s.customerOrder, c.id],
-          activeCustomerId: c.id,
-        }))
-      },
-
       setActive: (id) => set({ activeCustomerId: id }),
 
       renameCustomer: (id, name) =>
@@ -135,132 +126,175 @@ export const useTrackerStore = create<Store>()(
 
       reorderCustomers: (ids) => set({ customerOrder: ids }),
 
-      patchMeta: (id, patch) =>
-        set((s) => updateCustomer(s, id, (c) => ({ ...c, meta: { ...c.meta, ...patch } }))),
-
-      patchTitle: (id, patch) =>
-        set((s) => updateCustomer(s, id, (c) => ({ ...c, title: { ...c.title, ...patch } }))),
-
-      patchHero: (id, patch) =>
-        set((s) => updateCustomer(s, id, (c) => ({ ...c, hero: { ...c.hero, ...patch } }))),
-
-      patchPhase: (id, phaseId, patch) =>
+      addReport: (customerId) => {
+        const c = get().customers[customerId]
+        if (!c) return
+        const sorted = [...c.reports].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        const latest = sorted[0]
+        const report = cloneReport(latest)
         set((s) =>
-          updateCustomer(s, id, (c) => ({
-            ...c,
-            phases: c.phases.map((p) => (p.id === phaseId ? { ...p, ...patch } : p)),
+          updateCustomer(s, customerId, (cu) => ({
+            ...cu,
+            reports: [...cu.reports, report],
+            activeReportId: report.id,
+          })),
+        )
+      },
+
+      removeReport: (customerId, reportId) => {
+        set((s) => {
+          const c = s.customers[customerId]
+          if (!c || c.reports.length <= 1) return {}
+          const reports = c.reports.filter((r) => r.id !== reportId)
+          const sorted = [...reports].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+          const activeReportId =
+            c.activeReportId === reportId ? sorted[0].id : c.activeReportId
+          return {
+            customers: {
+              ...s.customers,
+              [customerId]: { ...c, reports, activeReportId },
+            },
+          }
+        })
+      },
+
+      setActiveReport: (customerId, reportId) =>
+        set((s) =>
+          updateCustomer(s, customerId, (c) => ({ ...c, activeReportId: reportId })),
+        ),
+
+      patchReportDate: (customerId, reportId, date) =>
+        set((s) => updateReport(s, customerId, reportId, (r) => ({ ...r, meta: { ...r.meta, date } }))),
+
+      patchMeta: (customerId, reportId, patch) =>
+        set((s) =>
+          updateReport(s, customerId, reportId, (r) => ({ ...r, meta: { ...r.meta, ...patch } })),
+        ),
+
+      patchTitle: (customerId, reportId, patch) =>
+        set((s) =>
+          updateReport(s, customerId, reportId, (r) => ({ ...r, title: { ...r.title, ...patch } })),
+        ),
+
+      patchHero: (customerId, reportId, patch) =>
+        set((s) =>
+          updateReport(s, customerId, reportId, (r) => ({ ...r, hero: { ...r.hero, ...patch } })),
+        ),
+
+      patchPhase: (customerId, reportId, phaseId, patch) =>
+        set((s) =>
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
+            phases: r.phases.map((p) => (p.id === phaseId ? { ...p, ...patch } : p)),
           })),
         ),
 
-      cyclePhaseStatus: (id, phaseId) =>
+      cyclePhaseStatus: (customerId, reportId, phaseId) =>
         set((s) =>
-          updateCustomer(s, id, (c) => ({
-            ...c,
-            phases: c.phases.map((p) =>
-              p.id === phaseId ? { ...p, status: phaseCycle(p.status) } : p,
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
+            phases: r.phases.map((p) =>
+              p.id === phaseId ? { ...p, status: nextIn(PHASE_CYCLE, p.status) } : p,
             ),
           })),
         ),
 
-      addTask: (id) =>
+      addTask: (customerId, reportId) =>
         set((s) =>
-          updateCustomer(s, id, (c) => ({
-            ...c,
-            tasks: [...c.tasks, { id: uuidv4(), task: '', owner: '', due: '' }],
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
+            tasks: [...r.tasks, { id: uuidv4(), task: '', owner: '', due: '' }],
           })),
         ),
 
-      removeTask: (id, taskId) =>
+      removeTask: (customerId, reportId, taskId) =>
         set((s) =>
-          updateCustomer(s, id, (c) => ({
-            ...c,
-            tasks: c.tasks.filter((t) => t.id !== taskId),
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
+            tasks: r.tasks.filter((t) => t.id !== taskId),
           })),
         ),
 
-      patchTask: (id, taskId, patch) =>
+      patchTask: (customerId, reportId, taskId, patch) =>
         set((s) =>
-          updateCustomer(s, id, (c) => ({
-            ...c,
-            tasks: c.tasks.map((t) => (t.id === taskId ? { ...t, ...patch } : t)),
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
+            tasks: r.tasks.map((t) => (t.id === taskId ? { ...t, ...patch } : t)),
           })),
         ),
 
-      patchOutlookDates: (id, week, patch) =>
+      patchOutlookDates: (customerId, reportId, week, patch) =>
         set((s) =>
-          updateCustomer(s, id, (c) => ({
-            ...c,
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
+            outlook: { ...r.outlook, [week]: { ...r.outlook[week], ...patch } },
+          })),
+        ),
+
+      addOutlookItem: (customerId, reportId, week) =>
+        set((s) =>
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
             outlook: {
-              ...c.outlook,
-              [week]: { ...c.outlook[week], ...patch },
+              ...r.outlook,
+              [week]: { ...r.outlook[week], items: [...r.outlook[week].items, ''] },
             },
           })),
         ),
 
-      addOutlookItem: (id, week) =>
+      removeOutlookItem: (customerId, reportId, week, idx) =>
         set((s) =>
-          updateCustomer(s, id, (c) => ({
-            ...c,
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
             outlook: {
-              ...c.outlook,
-              [week]: { ...c.outlook[week], items: [...c.outlook[week].items, ''] },
-            },
-          })),
-        ),
-
-      removeOutlookItem: (id, week, idx) =>
-        set((s) =>
-          updateCustomer(s, id, (c) => ({
-            ...c,
-            outlook: {
-              ...c.outlook,
+              ...r.outlook,
               [week]: {
-                ...c.outlook[week],
-                items: c.outlook[week].items.filter((_, i) => i !== idx),
+                ...r.outlook[week],
+                items: r.outlook[week].items.filter((_, i) => i !== idx),
               },
             },
           })),
         ),
 
-      patchOutlookItem: (id, week, idx, text) =>
+      patchOutlookItem: (customerId, reportId, week, idx, text) =>
         set((s) =>
-          updateCustomer(s, id, (c) => ({
-            ...c,
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
             outlook: {
-              ...c.outlook,
+              ...r.outlook,
               [week]: {
-                ...c.outlook[week],
-                items: c.outlook[week].items.map((item, i) => (i === idx ? text : item)),
+                ...r.outlook[week],
+                items: r.outlook[week].items.map((item, i) => (i === idx ? text : item)),
               },
             },
           })),
         ),
 
-      patchStream: (id, streamId, patch) =>
+      patchStream: (customerId, reportId, streamId, patch) =>
         set((s) =>
-          updateCustomer(s, id, (c) => ({
-            ...c,
-            workStreams: c.workStreams.map((ws) =>
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
+            workStreams: r.workStreams.map((ws) =>
               ws.id === streamId ? { ...ws, ...patch } : ws,
             ),
           })),
         ),
 
-      cycleStreamStatus: (id, streamId) =>
+      cycleStreamStatus: (customerId, reportId, streamId) =>
         set((s) =>
-          updateCustomer(s, id, (c) => ({
-            ...c,
-            workStreams: c.workStreams.map((ws) =>
-              ws.id === streamId ? { ...ws, status: streamCycle(ws.status) } : ws,
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
+            workStreams: r.workStreams.map((ws) =>
+              ws.id === streamId ? { ...ws, status: nextIn(STREAM_CYCLE, ws.status) } : ws,
             ),
           })),
         ),
 
-      addMilestone: (id, streamId) =>
+      addMilestone: (customerId, reportId, streamId) =>
         set((s) =>
-          updateCustomer(s, id, (c) => ({
-            ...c,
-            workStreams: c.workStreams.map((ws) =>
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
+            workStreams: r.workStreams.map((ws) =>
               ws.id === streamId
                 ? {
                     ...ws,
@@ -274,11 +308,11 @@ export const useTrackerStore = create<Store>()(
           })),
         ),
 
-      removeMilestone: (id, streamId, msId) =>
+      removeMilestone: (customerId, reportId, streamId, msId) =>
         set((s) =>
-          updateCustomer(s, id, (c) => ({
-            ...c,
-            workStreams: c.workStreams.map((ws) =>
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
+            workStreams: r.workStreams.map((ws) =>
               ws.id === streamId
                 ? { ...ws, milestones: ws.milestones.filter((m) => m.id !== msId) }
                 : ws,
@@ -286,11 +320,11 @@ export const useTrackerStore = create<Store>()(
           })),
         ),
 
-      patchMilestone: (id, streamId, msId, text) =>
+      patchMilestone: (customerId, reportId, streamId, msId, text) =>
         set((s) =>
-          updateCustomer(s, id, (c) => ({
-            ...c,
-            workStreams: c.workStreams.map((ws) =>
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
+            workStreams: r.workStreams.map((ws) =>
               ws.id === streamId
                 ? {
                     ...ws,
@@ -303,16 +337,16 @@ export const useTrackerStore = create<Store>()(
           })),
         ),
 
-      cycleMilestoneState: (id, streamId, msId) =>
+      cycleMilestoneState: (customerId, reportId, streamId, msId) =>
         set((s) =>
-          updateCustomer(s, id, (c) => ({
-            ...c,
-            workStreams: c.workStreams.map((ws) =>
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
+            workStreams: r.workStreams.map((ws) =>
               ws.id === streamId
                 ? {
                     ...ws,
                     milestones: ws.milestones.map((m) =>
-                      m.id === msId ? { ...m, state: msCycle(m.state) } : m,
+                      m.id === msId ? { ...m, state: nextIn(MS_CYCLE, m.state) } : m,
                     ),
                   }
                 : ws,
@@ -320,42 +354,42 @@ export const useTrackerStore = create<Store>()(
           })),
         ),
 
-      addBlocker: (id) =>
+      addBlocker: (customerId, reportId) =>
         set((s) =>
-          updateCustomer(s, id, (c) => ({
-            ...c,
-            blockers: [...c.blockers, { id: uuidv4(), level: 'low' as RiskLevel, text: '' }],
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
+            blockers: [...r.blockers, { id: uuidv4(), level: 'low' as RiskLevel, text: '' }],
           })),
         ),
 
-      removeBlocker: (id, blockerId) =>
+      removeBlocker: (customerId, reportId, blockerId) =>
         set((s) =>
-          updateCustomer(s, id, (c) => ({
-            ...c,
-            blockers: c.blockers.filter((b) => b.id !== blockerId),
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
+            blockers: r.blockers.filter((b) => b.id !== blockerId),
           })),
         ),
 
-      patchBlocker: (id, blockerId, text) =>
+      patchBlocker: (customerId, reportId, blockerId, text) =>
         set((s) =>
-          updateCustomer(s, id, (c) => ({
-            ...c,
-            blockers: c.blockers.map((b) => (b.id === blockerId ? { ...b, text } : b)),
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
+            blockers: r.blockers.map((b) => (b.id === blockerId ? { ...b, text } : b)),
           })),
         ),
 
-      cycleBlockerLevel: (id, blockerId) =>
+      cycleBlockerLevel: (customerId, reportId, blockerId) =>
         set((s) =>
-          updateCustomer(s, id, (c) => ({
-            ...c,
-            blockers: c.blockers.map((b) =>
-              b.id === blockerId ? { ...b, level: riskCycle(b.level) } : b,
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
+            blockers: r.blockers.map((b) =>
+              b.id === blockerId ? { ...b, level: nextIn(RISK_CYCLE, b.level) } : b,
             ),
           })),
         ),
     }),
     {
-      name: 'converge-tracker-v1',
+      name: 'converge-tracker-v2',
       partialize: (s) => ({
         customers: s.customers,
         customerOrder: s.customerOrder,

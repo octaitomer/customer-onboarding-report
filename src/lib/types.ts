@@ -47,13 +47,10 @@ export type Blocker = {
   text: string
 }
 
-export type Customer = {
+export type Report = {
   id: string
-  name: string
-  meta: {
-    site: string
-    date: string
-  }
+  createdAt: string       // ISO "YYYY-MM-DD" — sort order only
+  meta: { site: string; date: string }
   title: {
     eyebrow: string
     main: string
@@ -74,4 +71,11 @@ export type Customer = {
   }
   workStreams: WorkStream[]
   blockers: Blocker[]
+}
+
+export type Customer = {
+  id: string
+  name: string
+  reports: Report[]
+  activeReportId: string
 }
