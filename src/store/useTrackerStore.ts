@@ -33,6 +33,8 @@ type Store = {
   patchTitle: (customerId: string, reportId: string, patch: Partial<Report['title']>) => void
   patchHero: (customerId: string, reportId: string, patch: Partial<Report['hero']>) => void
 
+  toggleFinishDate: (customerId: string, reportId: string) => void
+
   // Phases
   patchPhase: (customerId: string, reportId: string, phaseId: string, patch: { title?: string; percent?: number; startDate?: string; endDate?: string }) => void
   cyclePhaseStatus: (customerId: string, reportId: string, phaseId: string) => void
@@ -195,6 +197,14 @@ export const useTrackerStore = create<Store>()(
       patchHero: (customerId, reportId, patch) =>
         set((s) =>
           updateReport(s, customerId, reportId, (r) => ({ ...r, hero: { ...r.hero, ...patch } })),
+        ),
+
+      toggleFinishDate: (customerId, reportId) =>
+        set((s) =>
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
+            hero: { ...r.hero, showFinish: !(r.hero.showFinish ?? true) },
+          })),
         ),
 
       patchPhase: (customerId, reportId, phaseId, patch) =>

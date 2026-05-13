@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import type { Report } from '../lib/types'
 import Header from './Header'
 import TitleBlock from './TitleBlock'
@@ -24,7 +23,7 @@ export default function Document({ customerId, customerName, report }: Props) {
   const cid = customerId
   const rid = report.id
   const phase2Id = report.phases[1]?.id
-  const [showFinish, setShowFinish] = useState(true)
+  const showFinish = report.hero.showFinish ?? true
 
   function setStart(v: string) {
     store.patchHero(cid, rid, { pilotStart: v })
@@ -70,7 +69,7 @@ export default function Document({ customerId, customerName, report }: Props) {
           onStart={setStart}
           onFinish={setFinish}
           showFinish={showFinish}
-          onToggleFinish={() => setShowFinish((v) => !v)}
+          onToggleFinish={() => store.toggleFinishDate(cid, rid)}
         />
 
         <PhaseGrid

@@ -64,6 +64,7 @@ export type Report = {
     onboardingPercent: string
     pilotStart: string
     pilotFinish: string
+    showFinish?: boolean
   }
   phases: Phase[]
   tasks: Task[]
