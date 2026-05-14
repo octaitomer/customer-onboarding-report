@@ -7,26 +7,38 @@ type Props = {
   pilotStart: string
   pilotFinish: string
   showFinish: boolean
+  projectedSavingPercent: string
+  showProjectedSaving: boolean
   onPct: (v: string) => void
   onStart: (v: string) => void
   onFinish: (v: string) => void
   onToggleFinish: () => void
+  onProjectedSaving: (v: string) => void
+  onToggleProjectedSaving: () => void
 }
 
 export default function HeroBlock({
   onboardingPercent, pilotStart, pilotFinish,
-  showFinish, onPct, onStart, onFinish, onToggleFinish,
+  showFinish, projectedSavingPercent, showProjectedSaving,
+  onPct, onStart, onFinish, onToggleFinish,
+  onProjectedSaving, onToggleProjectedSaving,
 }: Props) {
   const [showControls, setShowControls] = useState(false)
+  const [showSavingControls, setShowSavingControls] = useState(false)
   const controlsRef = useRef<HTMLDivElement>(null)
+  const savingControlsRef = useRef<HTMLDivElement>(null)
   const showControlsRef = useRef(false)
+  const showSavingControlsRef = useRef(false)
   showControlsRef.current = showControls
+  showSavingControlsRef.current = showSavingControls
 
   useEffect(() => {
     function handleMouseDown(e: MouseEvent) {
-      if (!showControlsRef.current) return
-      if (controlsRef.current && !controlsRef.current.contains(e.target as Node)) {
+      if (showControlsRef.current && controlsRef.current && !controlsRef.current.contains(e.target as Node)) {
         setShowControls(false)
+      }
+      if (showSavingControlsRef.current && savingControlsRef.current && !savingControlsRef.current.contains(e.target as Node)) {
+        setShowSavingControls(false)
       }
     }
     document.addEventListener('mousedown', handleMouseDown)
@@ -37,6 +49,13 @@ export default function HeroBlock({
     const current = parseInt(onboardingPercent, 10)
     const base = isNaN(current) ? 0 : current
     onPct(String(Math.max(0, Math.min(100, base + delta))))
+  }
+
+  function stepSaving(delta: number) {
+    const current = parseFloat(projectedSavingPercent)
+    const base = isNaN(current) ? 0 : current
+    const next = Math.round((base + delta) * 10) / 10
+    onProjectedSaving(String(Math.max(0, next)))
   }
 
   return (
@@ -67,99 +86,239 @@ export default function HeroBlock({
         }}
       />
 
-      {/* Left: big % */}
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        <div
-          ref={controlsRef}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-          }}
-        >
+      {/* Left: big % + optional projected saving */}
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'flex-start', gap: '20px' }}>
+        {/* Overall Progress stat */}
+        <div>
           <div
+            ref={controlsRef}
             style={{
               display: 'flex',
-              alignItems: 'baseline',
-              fontFamily: 'inherit',
-              fontSize: '56px',
-              fontWeight: 500,
-              lineHeight: 0.95,
-              letterSpacing: '-0.04em',
-              cursor: 'pointer',
+              alignItems: 'center',
+              gap: '10px',
             }}
-            onClick={() => setShowControls((v) => !v)}
-            title="Click to adjust"
           >
-            <EditableText
-              value={onboardingPercent}
-              onChange={onPct}
-              placeholder="[XX]"
-              style={{ color: '#fff', outline: 'none' }}
-            />
-            <span style={{ fontSize: '28px', color: '#FF7032', fontWeight: 400 }}>%</span>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'baseline',
+                fontFamily: 'inherit',
+                fontSize: '56px',
+                fontWeight: 500,
+                lineHeight: 0.95,
+                letterSpacing: '-0.04em',
+                cursor: 'pointer',
+              }}
+              onClick={() => setShowControls((v) => !v)}
+              title="Click to adjust"
+            >
+              <EditableText
+                value={onboardingPercent}
+                onChange={onPct}
+                placeholder="[XX]"
+                style={{ color: '#fff', outline: 'none' }}
+              />
+              <span style={{ fontSize: '28px', color: '#FF7032', fontWeight: 400 }}>%</span>
+            </div>
+
+            {/* +/- stepper — visible after clicking the number */}
+            {showControls && (
+              <div className="no-print" style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
+              }}>
+                {[
+                  { delta: 5, label: '+' },
+                  { delta: -5, label: '−' },
+                ].map(({ delta, label }) => (
+                  <button
+                    key={delta}
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); step(delta) }}
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      background: 'rgba(255,255,255,0.08)',
+                      border: '1px solid rgba(255,255,255,0.18)',
+                      borderRadius: '6px',
+                      color: '#fff',
+                      fontSize: '16px',
+                      lineHeight: 1,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'background 0.12s, border-color 0.12s',
+                      fontFamily: '"JetBrains Mono", monospace',
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#FF5C39'
+                      e.currentTarget.style.borderColor = '#FF5C39'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
+                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* +/- stepper — visible after clicking the number */}
-          {showControls && (
-            <div className="no-print" style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '4px',
-            }}>
-              {[
-                { delta: 5, label: '+' },
-                { delta: -5, label: '−' },
-              ].map(({ delta, label }) => (
-                <button
-                  key={delta}
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); step(delta) }}
-                  style={{
-                    width: '28px',
-                    height: '28px',
-                    background: 'rgba(255,255,255,0.08)',
-                    border: '1px solid rgba(255,255,255,0.18)',
-                    borderRadius: '6px',
-                    color: '#fff',
-                    fontSize: '16px',
-                    lineHeight: 1,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'background 0.12s, border-color 0.12s',
-                    fontFamily: '"JetBrains Mono", monospace',
-                    flexShrink: 0,
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#FF5C39'
-                    e.currentTarget.style.borderColor = '#FF5C39'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
+          <div
+            style={{
+              fontFamily: '"ABC Favorit Mono", "JetBrains Mono", monospace',
+              fontSize: '10px',
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
+              color: 'rgba(255,255,255,0.55)',
+              marginTop: '8px',
+            }}
+          >
+            Overall Progress
+          </div>
         </div>
 
-        <div
-          style={{
-            fontFamily: '"ABC Favorit Mono", "JetBrains Mono", monospace',
-            fontSize: '10px',
-            letterSpacing: '0.16em',
-            textTransform: 'uppercase',
-            color: 'rgba(255,255,255,0.55)',
-            marginTop: '8px',
-          }}
-        >
-          Overall Progress
-        </div>
+        {/* Projected Saving stat */}
+        {showProjectedSaving ? (
+          <div style={{ borderLeft: '1px solid rgba(255,255,255,0.15)', paddingLeft: '20px' }}>
+            <div
+              ref={savingControlsRef}
+              style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  fontFamily: 'inherit',
+                  fontSize: '56px',
+                  fontWeight: 500,
+                  lineHeight: 0.95,
+                  letterSpacing: '-0.04em',
+                  cursor: 'pointer',
+                }}
+                onClick={() => setShowSavingControls((v) => !v)}
+                title="Click to adjust"
+              >
+                <EditableText
+                  value={projectedSavingPercent}
+                  onChange={onProjectedSaving}
+                  placeholder="[XX]"
+                  style={{ color: '#fff', outline: 'none' }}
+                />
+                <span style={{ fontSize: '28px', color: '#FF7032', fontWeight: 400 }}>%</span>
+              </div>
+
+              {showSavingControls && (
+                <div className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {[{ delta: 0.1, label: '+' }, { delta: -0.1, label: '−' }].map(({ delta, label }) => (
+                    <button
+                      key={delta}
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); stepSaving(delta) }}
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        background: 'rgba(255,255,255,0.08)',
+                        border: '1px solid rgba(255,255,255,0.18)',
+                        borderRadius: '6px',
+                        color: '#fff',
+                        fontSize: '16px',
+                        lineHeight: 1,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'background 0.12s, border-color 0.12s',
+                        fontFamily: '"JetBrains Mono", monospace',
+                        flexShrink: 0,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#FF5C39'
+                        e.currentTarget.style.borderColor = '#FF5C39'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div
+              style={{
+                fontFamily: '"ABC Favorit Mono", "JetBrains Mono", monospace',
+                fontSize: '10px',
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.55)',
+                marginTop: '8px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                Projected Saving
+                <button
+                  type="button"
+                  className="no-print"
+                  onClick={onToggleProjectedSaving}
+                  title="Hide projected saving"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '0 2px',
+                    cursor: 'pointer',
+                    color: 'rgba(255,255,255,0.35)',
+                    fontSize: '11px',
+                    lineHeight: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = '#fff' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.35)' }}
+                >
+                  👁
+                </button>
+              </div>
+              <div>(Cooling Energy)</div>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="no-print"
+            onClick={onToggleProjectedSaving}
+            title="Show projected saving"
+            style={{
+              alignSelf: 'center',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px dashed rgba(255,255,255,0.18)',
+              borderRadius: '4px',
+              padding: '6px 10px',
+              cursor: 'pointer',
+              color: 'rgba(255,255,255,0.3)',
+              fontSize: '9px',
+              fontFamily: '"JetBrains Mono", monospace',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.4)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(255,255,255,0.3)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)' }}
+          >
+            <span>👁</span> Projected Saving
+          </button>
+        )}
       </div>
 
       {/* Right: dates */}

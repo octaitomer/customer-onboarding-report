@@ -24,6 +24,7 @@ export default function Document({ customerId, customerName, report }: Props) {
   const rid = report.id
   const phase2Id = report.phases[1]?.id
   const showFinish = report.hero.showFinish ?? true
+  const showProjectedSaving = report.hero.showProjectedSaving ?? false
 
   function setStart(v: string) {
     store.patchHero(cid, rid, { pilotStart: v })
@@ -70,6 +71,10 @@ export default function Document({ customerId, customerName, report }: Props) {
           onFinish={setFinish}
           showFinish={showFinish}
           onToggleFinish={() => store.toggleFinishDate(cid, rid)}
+          projectedSavingPercent={report.hero.projectedSavingPercent ?? ''}
+          showProjectedSaving={showProjectedSaving}
+          onProjectedSaving={(v) => store.patchHero(cid, rid, { projectedSavingPercent: v })}
+          onToggleProjectedSaving={() => store.toggleProjectedSaving(cid, rid)}
         />
 
         <PhaseGrid

@@ -65,6 +65,8 @@ export type Report = {
     pilotStart: string
     pilotFinish: string
     showFinish?: boolean
+    projectedSavingPercent?: string
+    showProjectedSaving?: boolean
   }
   phases: Phase[]
   tasks: Task[]
