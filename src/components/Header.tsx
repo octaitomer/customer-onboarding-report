@@ -47,7 +47,7 @@ export default function Header({ partnerName, site, date, onPartnerName, onSite,
           placeholder="Partner"
           style={{
             fontFamily: 'inherit',
-            fontSize: '26px',
+            fontSize: '30px',
             fontWeight: 500,
             lineHeight: 1,
             letterSpacing: '-0.015em',

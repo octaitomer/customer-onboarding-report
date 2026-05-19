@@ -38,7 +38,7 @@ export default function PhaseGrid({
         }}
       >
         <h2 style={{ fontFamily: 'inherit', fontWeight: 500, fontSize: '19px', letterSpacing: '-0.01em' }}>
-          Programme phase
+          Programme Phase
         </h2>
         <span
           style={{

@@ -25,6 +25,7 @@ export default function Document({ customerId, customerName, report }: Props) {
   const phase2Id = report.phases[1]?.id
   const showFinish = report.hero.showFinish ?? true
   const showProjectedSaving = report.hero.showProjectedSaving ?? false
+  const showBlockers = report.showBlockers ?? true
 
   function setStart(v: string) {
     store.patchHero(cid, rid, { pilotStart: v })
@@ -141,13 +142,32 @@ export default function Document({ customerId, customerName, report }: Props) {
           onCycleMilestone={(streamId, msId) => store.cycleMilestoneState(cid, rid, streamId, msId)}
         />
 
-        <BlockersPanel
-          blockers={report.blockers}
-          onAdd={() => store.addBlocker(cid, rid)}
-          onRemove={(blockerId) => store.removeBlocker(cid, rid, blockerId)}
-          onPatch={(blockerId, text) => store.patchBlocker(cid, rid, blockerId, text)}
-          onCycleLevel={(blockerId) => store.cycleBlockerLevel(cid, rid, blockerId)}
-        />
+        {showBlockers ? (
+          <BlockersPanel
+            blockers={report.blockers}
+            onAdd={() => store.addBlocker(cid, rid)}
+            onRemove={(blockerId) => store.removeBlocker(cid, rid, blockerId)}
+            onPatch={(blockerId, text) => store.patchBlocker(cid, rid, blockerId, text)}
+            onCycleLevel={(blockerId) => store.cycleBlockerLevel(cid, rid, blockerId)}
+            onToggle={() => store.toggleBlockers(cid, rid)}
+          />
+        ) : (
+          <button
+            type="button"
+            className="no-print"
+            onClick={() => store.toggleBlockers(cid, rid)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              background: 'transparent', border: '1px dashed #CCCBCA',
+              color: '#6D6C6C', cursor: 'pointer', padding: '6px 12px',
+              fontFamily: '"ABC Favorit Mono","JetBrains Mono",monospace',
+              fontSize: '9.5px', letterSpacing: '0.14em', textTransform: 'uppercase',
+              marginBottom: '24px',
+            }}
+          >
+            <span>👁</span> Show blockers &amp; risks
+          </button>
+        )}
 
         <Footer page={2} totalPages={2} partnerName={customerName} />
       </div>

@@ -35,6 +35,7 @@ type Store = {
 
   toggleFinishDate: (customerId: string, reportId: string) => void
   toggleProjectedSaving: (customerId: string, reportId: string) => void
+  toggleBlockers: (customerId: string, reportId: string) => void
 
   // Phases
   patchPhase: (customerId: string, reportId: string, phaseId: string, patch: { title?: string; percent?: number; startDate?: string; endDate?: string }) => void
@@ -213,6 +214,14 @@ export const useTrackerStore = create<Store>()(
           updateReport(s, customerId, reportId, (r) => ({
             ...r,
             hero: { ...r.hero, showProjectedSaving: !(r.hero.showProjectedSaving ?? false) },
+          })),
+        ),
+
+      toggleBlockers: (customerId, reportId) =>
+        set((s) =>
+          updateReport(s, customerId, reportId, (r) => ({
+            ...r,
+            showBlockers: !(r.showBlockers ?? true),
           })),
         ),
 

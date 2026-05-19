@@ -68,6 +68,7 @@ export type Report = {
     projectedSavingPercent?: string
     showProjectedSaving?: boolean
   }
+  showBlockers?: boolean
   phases: Phase[]
   tasks: Task[]
   outlook: {

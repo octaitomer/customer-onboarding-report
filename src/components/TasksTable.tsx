@@ -28,7 +28,7 @@ export default function TasksTable({
         }}
       >
         <h2 style={{ fontFamily: 'inherit', fontWeight: 500, fontSize: '19px', letterSpacing: '-0.01em' }}>
-          Current Status and Open Tasks
+          Current Status And Open Tasks
         </h2>
         <span
           style={{

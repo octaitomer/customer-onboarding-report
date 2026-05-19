@@ -17,6 +17,7 @@ type Props = {
   onRemove: (id: string) => void
   onPatch: (id: string, text: string) => void
   onCycleLevel: (id: string) => void
+  onToggle: () => void
 }
 
 function hoverOn(e: React.MouseEvent<HTMLButtonElement>) {
@@ -30,7 +31,7 @@ function hoverOff(e: React.MouseEvent<HTMLButtonElement>) {
   el.style.color = '#6D6C6C'
 }
 
-export default function BlockersPanel({ blockers, onAdd, onRemove, onPatch, onCycleLevel }: Props) {
+export default function BlockersPanel({ blockers, onAdd, onRemove, onPatch, onCycleLevel, onToggle }: Props) {
   return (
     <section style={{ marginBottom: '24px' }}>
       <h3 style={{
@@ -39,7 +40,22 @@ export default function BlockersPanel({ blockers, onAdd, onRemove, onPatch, onCy
         display: 'flex', alignItems: 'center', gap: '10px',
       }}>
         <span style={{ width: '6px', height: '6px', background: '#FF7032', display: 'inline-block' }} />
-        Blockers &amp; risks
+        Blockers &amp; Risks
+        <button
+          type="button"
+          className="no-print"
+          onClick={onToggle}
+          title="Hide blockers & risks"
+          style={{
+            marginLeft: 'auto', background: 'none', border: 'none',
+            padding: '0 2px', cursor: 'pointer', color: 'rgba(0,0,0,0.3)',
+            fontSize: '13px', lineHeight: 1, display: 'flex', alignItems: 'center',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = '#000' }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(0,0,0,0.3)' }}
+        >
+          👁
+        </button>
       </h3>
       <ul style={{ listStyle: 'none', fontSize: '12.5px', lineHeight: 1.5 }}>
         {blockers.map((b) => {

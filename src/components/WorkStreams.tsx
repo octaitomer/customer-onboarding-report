@@ -1,6 +1,83 @@
+import { useState } from 'react'
 import type { WorkStream } from '../lib/types'
 import EditableText from './primitives/EditableText'
 import ProgressBar from './primitives/ProgressBar'
+
+const STREAM_INFO: Record<string, string> = {
+  'Stream 01': "Purpose is to verify DC infrastructure and gather what's needed to build the facility digital twin. Information to gather: building layout and logic, DC infrastructure parameters, equipment specs and configuration - anything required to model the site accurately.",
+  'Stream 02': "Purpose is to understand how the site is actually run day-to-day, so ACE can operate within real operational constraints. Information to gather: SLAs, operating practices, and operational parameters.",
+  'Stream 03': "Purpose is to define how OctaiPipe integrates into the customer's environment safely, with the meeting outcome being agreed system network and block diagrams. Scope covers infrastructure, networking, IT security, due diligence, VM infrastructure, and the VPN/SSH connectivity method into the DCIM/BMS.",
+}
+
+function InfoIcon({ streamLabel }: { streamLabel: string }) {
+  const [visible, setVisible] = useState(false)
+  const info = STREAM_INFO[streamLabel]
+  if (!info) return null
+  return (
+    <span
+      className="no-print"
+      style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}
+      onMouseEnter={() => setVisible(true)}
+      onMouseLeave={() => setVisible(false)}
+    >
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        width: '13px', height: '13px',
+        borderRadius: '50%',
+        border: '1px solid #AAAAAA',
+        color: '#888',
+        fontSize: '8.5px',
+        fontFamily: '"Neue Haas Grotesk Display", "Helvetica Neue", sans-serif',
+        lineHeight: 1,
+        cursor: 'default',
+        userSelect: 'none',
+        flexShrink: 0,
+        textTransform: 'none',
+        letterSpacing: 0,
+      }}>
+        i
+      </span>
+      {visible && (
+        <div style={{
+          position: 'absolute',
+          top: '18px',
+          left: '0',
+          width: '260px',
+          background: '#fff',
+          border: '1px solid #E5E7EB',
+          borderRadius: '6px',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+          padding: '10px 12px',
+          zIndex: 100,
+          textTransform: 'none',
+          letterSpacing: 'normal',
+        }}>
+          <p style={{
+            margin: '0 0 8px',
+            fontSize: '11px',
+            lineHeight: 1.55,
+            color: '#111',
+            fontFamily: '"Neue Haas Grotesk Display", "Helvetica Neue", sans-serif',
+          }}>
+            {info}
+          </p>
+          <p style={{
+            margin: 0,
+            fontSize: '9.5px',
+            lineHeight: 1.4,
+            color: '#9CA3AF',
+            fontFamily: '"ABC Favorit Mono", "JetBrains Mono", monospace',
+            letterSpacing: '0.04em',
+            borderTop: '1px solid #F3F4F6',
+            paddingTop: '7px',
+          }}>
+            Not shown in customer report or PDF
+          </p>
+        </div>
+      )}
+    </span>
+  )
+}
 
 const STREAM_LABELS: Record<string, { label: string; color: string; bg: string }> = {
   ahead:      { label: '▲ Ahead',    color: '#1F7A3A', bg: '#E1F0E5' },
@@ -99,7 +176,7 @@ export default function WorkStreams({
         marginBottom: '14px', paddingBottom: '8px', borderBottom: '1px solid #CCCBCA',
       }}>
         <h2 style={{ fontFamily: 'inherit', fontWeight: 500, fontSize: '19px', letterSpacing: '-0.01em' }}>
-          Work streams
+          Work Streams
         </h2>
         <span style={{ ...MONO, fontSize: '10.5px', color: '#6D6C6C', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
           {String(sectionIndex).padStart(2, '0')} / {String(sectionTotal).padStart(2, '0')}
@@ -117,8 +194,9 @@ export default function WorkStreams({
             }}>
               {/* Stream label + name */}
               <div>
-                <div style={{ ...MONO, fontSize: '10px', letterSpacing: '0.16em', color: '#6D6C6C', marginBottom: '6px', textTransform: 'uppercase' }}>
+                <div style={{ ...MONO, fontSize: '10px', letterSpacing: '0.16em', color: '#6D6C6C', marginBottom: '6px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '5px' }}>
                   {ws.streamLabel}
+                  <InfoIcon streamLabel={ws.streamLabel} />
                 </div>
                 <EditableText
                   value={ws.name}
@@ -145,8 +223,6 @@ export default function WorkStreams({
                         style={{
                           flex: 1, fontSize: '11.5px',
                           color: ms.state === 'done' ? '#6D6C6C' : '#000',
-                          textDecoration: ms.state === 'done' ? 'line-through' : 'none',
-                          textDecorationThickness: '1px',
                         }}
                       />
                       <button type="button" onClick={() => onRemoveMilestone(ws.id, ms.id)}
